@@ -165,7 +165,6 @@
     }
 
     getKapal()
-    getPelabuhan()
 
     var search = (dataThrow) => {
         var form_caption = $("#form-caption")
