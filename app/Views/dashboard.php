@@ -16,7 +16,6 @@
     }
 
     .my-card {
-        /* From https://css.glass */
         background: rgba(255, 255, 255, 0.17);
         border-radius: 16px;
         backdrop-filter: blur(6.1px);
@@ -37,14 +36,24 @@
             <div class="card-body">
                 <div class="card shadow-none border border-2 rounded">
                     <div class="card-body">
-                        <div class="row">
-                            <div class="col-md-6">
+                        <div class="row mb-3">
+                            <div class="col">
+                                <label for="selectType" class="form-label">Pilih Pencarian</label>
+                                <select name="" id="selectType" class="form-select" onchange="getType()">
+                                    <option value="">- Pilih Type -</option>
+                                    <option value="1">Kapal</option>
+                                    <option value="2">Pelabuhan</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="row d-none" id="type">
+                            <div class="col-md-6" id="kapal">
                                 <label for="selectKapal" class="form-label">Kapal</label>
                                 <select id="selectKapal" class="form-select">
                                     <option value="" selected disabled>- Pilih Kapal -</option>
                                 </select>
                             </div>
-                            <div class="col-md-6">
+                            <div class="col-md-6" id="pelabuhan">
                                 <label for="selectPelabuhan" class="form-label">Pelabuhan</label>
                                 <select id="selectPelabuhan" class="form-select">
                                     <option value="" selected disabled>- Pilih Pelabuhan -</option>
@@ -64,20 +73,22 @@
                                 </div>
                             </div>
                             <div id="container-carousel"></div>
-                            <table class="table my-card" style="border-radius: 0;">
-                                <caption>Prediksi Cuaca <a href="https://openweathermap.org/" class="text-dark"><u>Open Weather</u></a> <i class="ti ti-sun-wind" style="font-size: 1.3em;"></i></caption>
-                                <thead>
-                                    <tr>
-                                        <th>No</th>
-                                        <th>Kondisi Cuaca</th>
-                                        <th>Suhu</th>
-                                        <th>Kecepatan Angin</th>
-                                        <th>Arah Angin</th>
-                                        <th>Waktu</th>
-                                    </tr>
-                                </thead>
-                                <tbody></tbody>
-                            </table>
+                            <div class="table-responsive">
+                                <table class="table my-card" style="border-radius: 0;">
+                                    <caption>Prediksi Cuaca <a href="https://openweathermap.org/" class="text-dark"><u>Open Weather</u></a> <i class="ti ti-sun-wind" style="font-size: 1.3em;"></i></caption>
+                                    <thead>
+                                        <tr>
+                                            <th>No</th>
+                                            <th>Kondisi Cuaca</th>
+                                            <th>Suhu</th>
+                                            <th>Kecepatan Angin</th>
+                                            <th style="white-space: nowrap;">Arah Angin (U<i class="ti ti-arrow-narrow-up"></i>)</th>
+                                            <th>Waktu</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody></tbody>
+                                </table>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -90,6 +101,32 @@
 <?= $this->section('script'); ?>
 <script>
     var dataKapal = [];
+
+    var getType = () => {
+        var select = $("#selectType").val()
+        var type = $("#type");
+        var kapal = $("#kapal");
+        var pelabuhan = $("#pelabuhan");
+
+        switch (select) {
+            case "1":
+                type.removeClass('d-none')
+                kapal.removeClass('d-none')
+                pelabuhan.addClass('d-none')
+                break;
+            case "2":
+                type.removeClass('d-none')
+                kapal.addClass('d-none')
+                pelabuhan.removeClass('d-none')
+                break;
+
+            default:
+                type.addClass('d-none')
+                kapal.removeClass('d-none')
+                pelabuhan.removeClass('d-none')
+                break;
+        }
+    }
 
     var getKapal = () => {
         $.ajax({
@@ -127,24 +164,8 @@
         });
     }
 
-    var renderPelabuhan = () => {
-        $("#selectPelabuhan").select2({
-            data: [{
-                id: 1,
-                text: "Test1"
-            }],
-            placeholder: "Cari berdasarkan pelabuhan..",
-            allowClear: true,
-            theme: 'bootstrap-5'
-        });
-        // $("#selectKapal").on("select2:select", function(e) {
-        //     var selectedOption = e.params.data.element.dataset;
-        //     search(selectedOption)
-        // });
-    }
-
     getKapal()
-    renderPelabuhan()
+    getPelabuhan()
 
     var search = (dataThrow) => {
         var form_caption = $("#form-caption")
@@ -211,7 +232,7 @@
                     </div>
                     `;
                     tableRow += `
-                    <tr style="font-size: 1.3em;">
+                    <tr style="font-size: 1.1em;">
                         <td class="align-middle text-center">${key + 1}</td>
                         <td class="align-middle">
                             <img src="https://openweathermap.org/img/wn/${val.weather[0].icon}@2x.png" style="width: 40px;">
@@ -220,7 +241,7 @@
                         <td class="align-middle">${(val.main.temp - 273.15).toFixed(2)}&deg;C</td>
                         <td class="align-middle">${val.wind.speed}m/s</td>
                         <td class="align-middle">
-                            <div class="d-flex justify-content-between">
+                            <div class="d-flex justify-content-evenly">
                                 <p class="m-0">${val.wind.deg}&deg;</p>
                                 <p class="m-0" style="transform: rotate(${val.wind.deg}deg);">
                                     <i class="ti ti-arrow-narrow-up"></i>
@@ -231,7 +252,7 @@
                     </tr>
                     `
                 });
-                
+
                 $("#carousel").empty();
                 $("table tbody").empty();
                 var owlcarousel = $(".owl-carousel")
@@ -239,10 +260,10 @@
                 $("#carousel").owlCarousel({
                     margin: 10,
                     nav: true,
-                    // responsiveClass: true
+                    responsiveClass: true,
                     autoWidth: true
                 });
-                
+
                 $("table tbody").append(tableRow)
                 $("#result").removeClass("d-none")
             });
@@ -250,28 +271,6 @@
             form_caption.addClass('text-danger')
             form_caption.text('Harap lengkapi form diatas')
         }
-    }
-
-    var formatTime = (timestamp) => {
-        // Membuat objek Date dari timestamp
-        var dateObj = new Date(timestamp);
-
-        // Membuat objek Intl.DateTimeFormat dengan opsi zona waktu berdasarkan lokasi geografis
-        var options = {
-            timeZone: 'Asia/Jakarta', // Ganti dengan lokasi geografis yang diinginkan (misal: 'Asia/Makassar', 'Asia/Jayapura', dll.)
-            year: 'numeric',
-            month: '2-digit',
-            day: '2-digit',
-            hour: '2-digit',
-            minute: '2-digit',
-            second: '2-digit'
-        };
-        var dateTimeFormat = new Intl.DateTimeFormat('id-ID', options);
-
-        // Mengubah objek Date menjadi string dengan informasi zona waktu dinamis
-        var formattedDateTime = dateTimeFormat.format(dateObj);
-
-        return formattedDateTime;
     }
 </script>
 <?= $this->endSection('script'); ?>
