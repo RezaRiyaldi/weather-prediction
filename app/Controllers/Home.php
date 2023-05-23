@@ -8,4 +8,9 @@ class Home extends BaseController
     {
         return view('dashboard');
     }
+
+    public function tools()
+    {
+        return view('tools');
+    }
 }
