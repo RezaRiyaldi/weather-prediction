@@ -44,6 +44,8 @@
                                     <option value="">- Pilih Type -</option>
                                     <option value="1">Kapal</option>
                                     <option value="2">Pelabuhan</option>
+                                    <option value="3">Zona</option>
+                                    <option value="4">Lokasi Saya</option>
                                 </select>
                             </div>
                             <div class="col-md-6 d-none" id="type">
@@ -58,6 +60,17 @@
                                     <select id="selectPelabuhan" class="form-select">
                                         <option value="" selected disabled>- Pilih Pelabuhan -</option>
                                     </select>
+                                </div>
+                                <div class="" id="zona">
+                                    <label for="selectZona" class="form-label">Zona</label>
+                                    <select id="selectZona" class="form-select">
+                                        <option value="" selected disabled>- Pilih Zona -</option>
+                                    </select>
+                                </div>
+                                <div class="" id="lokasi">
+                                    <label for="" class="form-label">Lokasi</label>
+                                    <button class="btn btn-primary w-100"><i class="ti ti-map-pin"></i> Lokasi Saya</button>
+                                    <small class="text-danger d-none">Error</small>
                                 </div>
                             </div>
                         </div>
@@ -99,30 +112,86 @@
 
         <?= $this->section('script'); ?>
         <script>
-            var dataKapal = [];
+            var getApi = 2;
+            $(document).ready(function() {
+                var button = $("#lokasi button");
+                var textError = $("#lokasi small");
+
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(function(position) {
+                        var latitude = position.coords.latitude;
+                        var longitude = position.coords.longitude;
+
+                        button.attr('onclick', `search({latitude: '${latitude}', longitude: '${longitude}'})`)
+                    }, function error(error) {
+                        textError.text("Error: " + error.message);
+                        textError.removeClass("d-none");
+                        button.prop("disabled", true);
+                    });
+                } else {
+                    textError.text("Error: Geolocation is not supported by this browser.");
+                    textError.removeClass("d-none");
+                    button.attr("disabled");
+                }
+
+                getKapal()
+                getPelabuhanZona()
+            });
+
+            var removeLoad = () => {
+                getApi--;
+
+                if (getApi == 0) {
+                    renderKapal()
+                    renderPelabuhanZona()
+                    $(".load").remove()
+                }
+            }
 
             var getType = () => {
                 var select = $("#selectType").val()
                 var type = $("#type");
                 var kapal = $("#kapal");
                 var pelabuhan = $("#pelabuhan");
+                var zona = $("#zona");
+                var lokasi = $("#lokasi");
 
                 switch (select) {
                     case "1":
                         type.removeClass('d-none')
                         kapal.removeClass('d-none')
                         pelabuhan.addClass('d-none')
+                        zona.addClass('d-none')
+                        lokasi.addClass('d-none')
                         break;
                     case "2":
                         type.removeClass('d-none')
                         kapal.addClass('d-none')
                         pelabuhan.removeClass('d-none')
+                        zona.addClass('d-none')
+                        lokasi.addClass('d-none')
+                        break;
+                    case "3":
+                        type.removeClass('d-none')
+                        kapal.addClass('d-none')
+                        pelabuhan.addClass('d-none')
+                        zona.removeClass('d-none')
+                        lokasi.addClass('d-none')
+                        break;
+                    case "4":
+                        type.removeClass('d-none')
+                        kapal.addClass('d-none')
+                        pelabuhan.addClass('d-none')
+                        zona.addClass('d-none')
+                        lokasi.removeClass('d-none')
                         break;
 
                     default:
                         type.addClass('d-none')
                         kapal.removeClass('d-none')
                         pelabuhan.removeClass('d-none')
+                        zona.removeClass('d-none')
+                        lokasi.removeClass('d-none')
                         break;
                 }
             }
@@ -140,18 +209,14 @@
                 }).done((kapal) => {
                     if (kapal.data.length > 0) {
                         $.each(kapal.data, (key, val) => {
-                            $("#selectKapal").append(`
-                        <option value="${key}" data-latitude="${val.lat}" data-longitude="${val.lon}">${val.date} - ${val.name}</option>
-                    `)
+                            $("#selectKapal").append(`<option value="${key}" data-latitude="${val.lat}" data-longitude="${val.lon}">${val.date} - ${val.name}</option>`)
                         })
-
-                        renderKapal()
-                        $(".load").remove()
+                        removeLoad()
                     }
                 })
             }
 
-            var getPelabuhan = () => {
+            var getPelabuhanZona = () => {
                 $.ajax({
                     url: "https://www.vms.web.id/vmap/api/getent.php",
                     data: {
@@ -159,18 +224,18 @@
                         pass: "magang2023",
                         entity: "zone"
                     },
-                }).done((pelabuhan) => {
-                    $.each(pelabuhan.features, (key, val) => {
+                }).done((pelabuhanZona) => {
+                    $.each(pelabuhanZona.features, (key, val) => {
                         var coordinates = val.geometry.coordinates
                         if (coordinates.length > 2) {
-                            $("#selectPelabuhan").append(`<optgroup label="${val.properties.zone_name}"></optgroup>`)
+                            $("#selectZona").append(`<optgroup label="${val.properties.zone_name}"></optgroup>`)
                             $.each(coordinates, (keyGroup, valGroup) => {
                                 $(`optgroup[label='${val.properties.zone_name}']`).append(`
                                     <option value="${key}" data-latitude="${valGroup[1]}" data-longitude="${valGroup[0]}">${keyGroup + 1}. ${val.properties.zone_name} (${valGroup[1]}, ${valGroup[0]})</option>
                                 `)
                             });
                         } else if (coordinates.length == 1) {
-                            $("#selectPelabuhan").append(`<optgroup label="${val.properties.zone_name}"></optgroup>`)
+                            $("#selectZona").append(`<optgroup label="${val.properties.zone_name}"></optgroup>`)
                             $.each(coordinates[0], (keyGroup2, valGroup2) => {
                                 $(`optgroup[label='${val.properties.zone_name}']`).append(`
                                     <option value="${key}" data-latitude="${valGroup2[1]}" data-longitude="${valGroup2[0]}">${keyGroup2 + 1}. ${val.properties.zone_name} (${valGroup2[1]}, ${valGroup2[0]})</option>
@@ -182,8 +247,7 @@
                             `)
                         }
                     });
-
-                    renderPelabuhan()
+                    removeLoad();
                 });
             }
 
@@ -199,7 +263,8 @@
                 });
             }
 
-            var renderPelabuhan = () => {
+            var renderPelabuhanZona = () => {
+                // Pelabuhan
                 $("#selectPelabuhan").select2({
                     placeholder: "Cari berdasarkan pelabuhan..",
                     allowClear: true,
@@ -209,10 +274,18 @@
                     var selectedOption = e.params.data.element.dataset;
                     search(selectedOption)
                 });
-            }
 
-            getKapal()
-            getPelabuhan()
+                // Zona
+                $("#selectZona").select2({
+                    placeholder: "Cari berdasarkan zona..",
+                    allowClear: true,
+                    theme: 'bootstrap-5'
+                });
+                $("#selectZona").on("select2:select", function(e) {
+                    var selectedOption = e.params.data.element.dataset;
+                    search(selectedOption)
+                });
+            }
 
             var search = (dataThrow) => {
                 var form_caption = $("#form-caption")
